@@ -11,7 +11,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: ray.vllm.nkp.cloudnative.nvdlab.net
+  - host: ray.wh-nkp1.cloudnative.nvdlab.net
     http:
       paths:
       - backend:
@@ -23,5 +23,5 @@ spec:
         pathType: Prefix
   tls:
   - hosts:
-    - ray.vllm.nkp.cloudnative.nvdlab.net
-    secretName: ray.vllm.nkp.cloudnative.nvdlab.net
+    - ray.wh-nkp1.cloudnative.nvdlab.net
+    secretName: ray.wh-nkp1.cloudnative.nvdlab.net
