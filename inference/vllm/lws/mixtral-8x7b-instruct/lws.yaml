@@ -37,7 +37,7 @@ spec:
               - sh
               - -c
               - "/vllm-workspace/ray_init.sh leader --ray_cluster_size=$RAY_CLUSTER_SIZE;
-                 python3 -m vllm.entrypoints.openai.api_server --port 8080 --model mistralai/Mixtral-8x7B-Instruct-v0.1 --tensor-parallel-size 2 --pipeline_parallel_size 2 --dtype half"
+                 python3 -m vllm.entrypoints.openai.api_server --port 8080 --model mistralai/Mixtral-8x7B-Instruct-v0.1 --tensor-parallel-size 1 --pipeline_parallel_size 4 --dtype half"
             resources:
               limits:
                 nvidia.com/gpu: "1"
