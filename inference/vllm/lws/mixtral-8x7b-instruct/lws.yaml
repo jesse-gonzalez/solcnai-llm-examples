@@ -21,7 +21,7 @@ spec:
       spec:
         containers:
           - name: vllm-leader
-            image: harbor.infrastructure.cloudnative.nvdlab.net/jesse/vllm-ray:0.0.1
+            image: harbor.infrastructure.cloudnative.nvdlab.net/wolfgang/vllm-ray:0.0.1
             imagePullPolicy: Always
             env:
               - name: RAY_CLUSTER_SIZE
@@ -40,7 +40,7 @@ spec:
                  python3 -m vllm.entrypoints.openai.api_server --port 8080 --model mistralai/Mixtral-8x7B-Instruct-v0.1 --tensor-parallel-size 2 --pipeline_parallel_size 2 --dtype half"
             resources:
               limits:
-                nvidia.com/gpu: "2"
+                nvidia.com/gpu: "1"
               requests:
             ports:
               - containerPort: 6379
@@ -79,7 +79,7 @@ spec:
       spec:
         containers:
           - name: vllm-worker
-            image: harbor.infrastructure.cloudnative.nvdlab.net/jesse/vllm-ray:0.0.1
+            image: harbor.infrastructure.cloudnative.nvdlab.net/wolfgang/vllm-ray:0.0.1
             imagePullPolicy: Always
             command:
               - sh
