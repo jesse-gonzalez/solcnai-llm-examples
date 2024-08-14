@@ -22,7 +22,6 @@ spec:
         containers:
           - name: vllm-leader
             image: harbor.infrastructure.cloudnative.nvdlab.net/wolfgang/vllm-ray:0.0.1
-            imagePullPolicy: Always
             env:
               - name: RAY_CLUSTER_SIZE
                 valueFrom:
