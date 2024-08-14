@@ -79,6 +79,8 @@ https://docs.ray.io/en/master/cluster/kubernetes/troubleshooting/rayservice-trou
 
 ```bash
 
+# make sure to update namespace
+
 # Run ray status
 kubectl exec -it $(kubectl get pods -l ray.io/node-type=head -o custom-columns=POD:metadata.name --no-headers) -- ray status
 kubectl exec -it $(kubectl get pods -l ray.io/node-type=head -o custom-columns=POD:metadata.name --no-headers) -- ray summary actors
