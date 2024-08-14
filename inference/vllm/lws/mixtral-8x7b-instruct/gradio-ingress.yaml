@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  name: gradio-ingress
+  namespace: llm
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: gradio.vllm.nkp.cloudnative.nvdlab.net
+    http:
+      paths:
+      - backend:
+          service:
+            name: gradio
+            port:
+              number: 7860
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - gradio.vllm.nkp.cloudnative.nvdlab.net
+    secretName: gradio.vllm.nkp.cloudnative.nvdlab.net

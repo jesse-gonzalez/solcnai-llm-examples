@@ -1,5 +1,3 @@
-
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,7 +13,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: llama-2-7b-gradio
+  name: gradio
   labels:
     app: gradio
 spec:
@@ -30,28 +28,21 @@ spec:
     spec:
       containers:
       - name: gradio
-        image: us-docker.pkg.dev/google-samples/containers/gke/gradio-app:v1.0.3
-        resources:
-          requests:
-            cpu: "250m"
-            memory: "512Mi"
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
+        image: us-docker.pkg.dev/google-samples/containers/gke/gradio-app:v1.0.0
         env:
+        - name: MODEL_ID
+          value: "mistralai/Mixtral-8x7B-Instruct-v0.1"
         - name: CONTEXT_PATH
           value: "/v1/chat/completions"
         - name: HOST
-          value: "http://llama-2-7b-serve-svc:8000"
-        - name: MODEL_ID
-          value: "meta-llama/Llama-2-7b-chat-hf"
+          value: "http://vllm-leader:8000"
         ports:
         - containerPort: 7860
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: llama-2-7b-gradio
+  name: gradio
 spec:
   selector:
     app: gradio

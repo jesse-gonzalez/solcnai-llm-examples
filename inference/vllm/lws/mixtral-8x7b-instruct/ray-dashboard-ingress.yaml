@@ -1,0 +1,27 @@
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  name: ray-lws-head-ingress
+  namespace: llm
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: ray.vllm.nkp.cloudnative.nvdlab.net
+    http:
+      paths:
+      - backend:
+          service:
+            name: vllm-leader
+            port:
+              number: 8265
+        path: /dashboard/(.*)
+        pathType: Prefix
+  tls:
+  - hosts:
+    - ray.vllm.nkp.cloudnative.nvdlab.net
+    secretName: ray.vllm.nkp.cloudnative.nvdlab.net
