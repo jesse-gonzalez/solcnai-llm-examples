@@ -5,11 +5,11 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/rewrite-target: /$1
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    traefik.ingress.kubernetes.io/router.tls: "true"
   name: ray-lws-head-ingress
   namespace: llm
 spec:
-  ingressClassName: nginx
+  ingressClassName: kommander-traefik
   rules:
   - host: ray.wh-nkp1.cloudnative.nvdlab.net
     http:

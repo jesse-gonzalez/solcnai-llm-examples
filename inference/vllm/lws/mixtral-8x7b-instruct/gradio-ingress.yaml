@@ -8,6 +8,7 @@ metadata:
   name: gradio-ingress
   namespace: llm
 spec:
+  ingressClassName: kommander-traefik
   rules:
   - host: gradio.wh-nkp1.cloudnative.nvdlab.net
     http:
