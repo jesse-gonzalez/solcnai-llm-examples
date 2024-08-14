@@ -43,7 +43,7 @@ spec:
       template:
         metadata:
           labels:
-            ai.gke.io: rayserve
+            nai.io: rayserve
         spec:
           containers:
           - name: ray-head
@@ -79,7 +79,7 @@ spec:
       template:
         metadata:
           labels:
-            ai.gke.io: rayserve
+            nai.io: rayserve
         spec:
           containers:
           - name: llm

@@ -1,0 +1,66 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vllm-metrics-servicemonitor
+  namespace: llm
+  labels:
+    prometheus.kommander.d2iq.io/select: "true"
+    leaderworkerset.sigs.k8s.io/name: vllm
+spec:
+  endpoints:
+  - path: /metrics
+    port: http
+  namespaceSelector:
+    matchNames:
+    - llm
+  selector:
+    matchLabels:
+      leaderworkerset.sigs.k8s.io/name: vllm
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ray-head-monitor
+  namespace: llm
+  labels:
+    prometheus.kommander.d2iq.io/select: "true"
+    monitoring: lws
+    leaderworkerset.sigs.k8s.io/name: vllm
+spec:
+  #jobLabel: ray-head
+  namespaceSelector:
+    matchNames:
+      - llm
+  # Only select Kubernetes Services with "matchLabels".
+  selector:
+    matchLabels:
+      leaderworkerset.sigs.k8s.io/name: vllm
+      role: leader
+  # A list of endpoints allowed as part of this ServiceMonitor.
+  endpoints:
+  - path: /metrics
+    port: http
+  targetLabels:
+  - leaderworkerset.sigs.k8s.io/vllm
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: ray-workers-monitor
+  namespace: llm
+  labels:
+    prometheus.kommander.d2iq.io/select: "true"
+    leaderworkerset.sigs.k8s.io/name: vllm
+spec:
+  jobLabel: ray-workers
+  namespaceSelector:
+    matchNames:
+      - llm
+  # Only select Kubernetes Pods with "matchLabels".
+  selector:
+    matchLabels:
+      leaderworkerset.sigs.k8s.io/name: vllm
+      role: worker
+  # A list of endpoints allowed as part of this PodMonitor.
+  podMetricsEndpoints:
+  - port: metrics
