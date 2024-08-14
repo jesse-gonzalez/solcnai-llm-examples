@@ -4,7 +4,6 @@ resources:
 - nfs-pvc.yaml
 - lws.yaml
 - service.yaml
-- middleware.yaml
 - ingress.yaml
 - ray-dashboard-ingress.yaml
 - servicemonitor.yaml
