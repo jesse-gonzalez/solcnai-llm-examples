@@ -16,7 +16,7 @@ spec:
           service:
             name: vllm-leader
             port:
-              number: 8080
+              number: 8000
         path: /
         pathType: Prefix
   tls:
