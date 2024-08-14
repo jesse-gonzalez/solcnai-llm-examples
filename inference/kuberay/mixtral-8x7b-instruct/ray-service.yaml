@@ -33,7 +33,7 @@ spec:
         pip: ["vllm==0.4.3"]
         env_vars:
           MODEL_ID: "mistralai/Mistral-7B-Instruct-v0.3"
-          TENSOR_PARALLELISM: "4"
+          TENSOR_PARALLELISM: "2"
   rayClusterConfig:
     headGroupSpec:
       rayStartParams:
