@@ -29,6 +29,50 @@ kubectl apply -k inference/vllm/lws/mixtral-8x7b-instruct
 
 ```
 
+```bash
+## Cleanup Using kustomize
+kubectl delete -k inference/vllm/lws/mixtral-8x7b-instruct
+```
+
+## Testing with Kuberay Clusters
+
+1. Requires Hugging-face secret
+
+```bash
+KUBERAY_TESTING_NAMESPACE=kuberay
+
+kubectl create ns ${KUBERAY_TESTING_NAMESPACE}
+
+## configure hugging face API token
+export HUGGING_FACE_HUB_TOKEN=<TOKEN>
+kubectl create secret generic hf-secret \
+    --from-literal=hf_api_token=${HUGGING_FACE_HUB_TOKEN} \
+    --dry-run=client -o yaml -n ${KUBERAY_TESTING_NAMESPACE} | kubectl apply -f -
+```
+
+### Deploy Kuberay Operator
+
+https://docs.ray.io/en/latest/cluster/kubernetes/getting-started/raycluster-quick-start.html
+
+```bash
+# This helm repo is same for all helm charts below
+helm repo add kuberay https://ray-project.github.io/kuberay-helm/
+helm repo update
+
+# Install both CRDs and KubeRay operator v1.1.1.
+helm upgrade --install kuberay-operator kuberay/kuberay-operator --namespace kuberay --create-namespace --version 1.1.1
+
+# Confirm that the operator is running in the namespace `kuberay`
+kubectl get pods -l app.kubernetes.io/name=kuberay-operator
+# NAME                                          READY   STATUS    RESTARTS     AGE
+# kuberay-operator-fcd9556c6-cn7pc              1/1     Running   0            4m28s
+
+```
+
+## Deploy Model Specific Kuberay - RayService
+
+`kubectl apply -f inference/kuberay/mixtral-8x7b-instruct/ray-service.yaml -n ${KUBERAY_TESTING_NAMESPACE}`
+
 ## Troubleshooting
 
 https://docs.ray.io/en/master/cluster/kubernetes/troubleshooting/rayservice-troubleshooting.html#kuberay-raysvc-troubleshoot
@@ -65,11 +109,4 @@ kubectl get nodes -o='custom-columns=NodeName:.metadata.name,TaintKey:.spec.tain
 
 # List PersistentVolumes sorted by capacity
 kubectl get pv --sort-by=.spec.capacity.storage
-
-
-```
-
-```bash
-## Using kustomize
-kubectl delete -k inference/vllm/lws/mixtral-8x7b-instruct
 ```
