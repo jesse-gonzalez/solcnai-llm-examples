@@ -125,4 +125,5 @@ class VLLMDeployment:
 model = VLLMDeployment.bind(
     model=os.environ['MODEL_ID'],
     tensor_parallel_size=int(os.environ['TENSOR_PARALLELISM']),
+    pipeline_parallel_size=int(os.environ['PIPELINE_PARALLELISM']),
 )

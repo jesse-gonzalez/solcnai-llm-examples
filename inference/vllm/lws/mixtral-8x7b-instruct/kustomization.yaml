@@ -5,6 +5,7 @@ resources:
 - lws.yaml
 - service.yaml
 - ingress.yaml
+- vllm-ingress.yaml
 - ray-dashboard-ingress.yaml
 - servicemonitor.yaml
 - horizontal-pod-autoscaler.yaml

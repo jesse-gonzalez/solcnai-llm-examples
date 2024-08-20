@@ -17,7 +17,7 @@ spec:
     namespace: llm
   nfs:
     path: /llm-model-store
-    server: files.dragon.cloudnative.nvdlab.net
+    server: files.romanticism.cloudnative.nvdlab.net
   persistentVolumeReclaimPolicy: Retain
   volumeMode: Filesystem
 ---
