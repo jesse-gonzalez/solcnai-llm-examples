@@ -126,7 +126,7 @@ curl https://mixtral.vllm.nkp.cloudnative.nvdlab.net/v1/completions \
   }'
 
 ## benchmarking with lws / ray request-rate num-prompts
-OPENAI_API_KEY=ANYTHING sh .staging/benchmarks/vllm-benchmark.sh https://mixtral.vllm.nkp.cloudnative.nvdlab.net mistralai/Mixtral-8x7B-Instruct-v0.1 5 2000
+OPENAI_API_KEY=ANYTHING sh .staging/benchmarks/vllm-benchmark.sh https://mixtral.vllm.nkp.cloudnative.nvdlab.net mistralai/Mixtral-8x7B-Instruct-v0.1 1 2000
 ```
 
 ```bash

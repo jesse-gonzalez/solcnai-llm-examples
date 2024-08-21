@@ -8,7 +8,7 @@ metadata:
     leaderworkerset.sigs.k8s.io/name: vllm
 spec:
   endpoints:
-  # should be the vllm metrics port (on http://localhost:8000)
+  # should be the vllm metrics port (on 8000)
   - path: /metrics
     port: http
   namespaceSelector:
@@ -38,7 +38,8 @@ spec:
       ray.io/node-type: head
   # A list of endpoints allowed as part of this ServiceMonitor.
   endpoints:
-  - port: metrics
+  - path: /metrics
+    port: metrics
   targetLabels:
   - leaderworkerset.sigs.k8s.io/vllm
 ---
@@ -62,4 +63,5 @@ spec:
       ray.io/node-type: worker
   # A list of endpoints allowed as part of this PodMonitor.
   podMetricsEndpoints:
-  - port: metrics
+  - path: /metrics
+    port: metrics
