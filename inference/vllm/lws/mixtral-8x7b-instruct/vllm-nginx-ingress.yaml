@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  name: mixtral-ingress
+  namespace: llm
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: mixtral.vllm.nkp.cloudnative.nvdlab.net
+    http:
+      paths:
+      - backend:
+          service:
+            name: vllm-leader
+            port:
+              number: 8000
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - mixtral.vllm.nkp.cloudnative.nvdlab.net
+    secretName: mixtral-ingress-tls

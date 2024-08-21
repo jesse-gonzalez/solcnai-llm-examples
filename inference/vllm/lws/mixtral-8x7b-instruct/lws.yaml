@@ -11,7 +11,7 @@ spec:
       maxSurge: 2
   replicas: 1
   leaderWorkerTemplate:
-    size: 4
+    size: 2
     restartPolicy: RecreateGroupOnPodRestart
     leaderTemplate:
       metadata:
@@ -28,20 +28,31 @@ spec:
                 valueFrom:
                   fieldRef:
                     fieldPath: metadata.annotations['leaderworkerset.sigs.k8s.io/size']
+              - name: HF_HUB_OFFLINE
+                value: "1"
               - name: HUGGING_FACE_HUB_TOKEN
                 valueFrom:
                   secretKeyRef:
                     name: hf-secret
                     key: hf_api_token
+              - name: RAY_GRAFANA_IFRAME_HOST
+                value: https://grafana.vllm.nkp.cloudnative.nvdlab.net/dkp/grafana
+              - name: RAY_GRAFANA_HOST
+                value: http://centralized-grafana.kommander:80
+              - name: RAY_PROMETHEUS_HOST
+                value: http://kube-prometheus-stack-prometheus.kommander:9090
             command:
               - sh
               - -c
               - "/vllm-workspace/ray_init.sh leader --ray_cluster_size=$RAY_CLUSTER_SIZE;
-                 python3 -m vllm.entrypoints.openai.api_server --port 8080 --model mistralai/Mixtral-8x7B-Instruct-v0.1 --tensor-parallel-size 2 --pipeline_parallel_size 2 --dtype half"
+                 python3 -m vllm.entrypoints.openai.api_server --port 8000 --model mistralai/Mixtral-8x7B-Instruct-v0.1 --tensor-parallel-size 2 --pipeline_parallel_size 2 --dtype half"
             resources:
               limits:
                 nvidia.com/gpu: "2"
+                memory: 60Gi
+                ephemeral-storage: 200Gi
               requests:
+                ephemeral-storage: 200Gi
             ports:
               - containerPort: 6379
                 name: gcs-server
@@ -50,7 +61,7 @@ spec:
               - containerPort: 10001
                 name: client
               - containerPort: 8000
-                name: serve
+                name: http
               - containerPort: 8080
                 name: metrics
             readinessProbe:
@@ -87,7 +98,14 @@ spec:
               - "/vllm-workspace/ray_init.sh worker --ray_address=$(LEADER_NAME).$(LWS_NAME).$(NAMESPACE).svc.cluster.local"
             resources:
               limits:
-                nvidia.com/gpu: "1"
+                nvidia.com/gpu: "2"
+                memory: 60Gi
+                ephemeral-storage: 200Gi
+              requests:
+                ephemeral-storage: 200Gi
+            ports:
+              - containerPort: 8000
+                name: http
             env:
               - name: LEADER_NAME
                 valueFrom:
@@ -101,6 +119,8 @@ spec:
                 valueFrom:
                   fieldRef:
                     fieldPath: metadata.labels['leaderworkerset.sigs.k8s.io/name']
+              - name: HF_HUB_OFFLINE
+                value: "1"
               - name: HUGGING_FACE_HUB_TOKEN
                 valueFrom:
                   secretKeyRef:

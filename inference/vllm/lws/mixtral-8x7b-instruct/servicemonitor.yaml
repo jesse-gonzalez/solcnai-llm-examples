@@ -8,6 +8,7 @@ metadata:
     leaderworkerset.sigs.k8s.io/name: vllm
 spec:
   endpoints:
+  # should be the vllm metrics port (on http://localhost:8000)
   - path: /metrics
     port: http
   namespaceSelector:
@@ -24,10 +25,9 @@ metadata:
   namespace: llm
   labels:
     prometheus.kommander.d2iq.io/select: "true"
-    monitoring: lws
     leaderworkerset.sigs.k8s.io/name: vllm
 spec:
-  #jobLabel: ray-head
+  jobLabel: ray-head
   namespaceSelector:
     matchNames:
       - llm
@@ -35,11 +35,10 @@ spec:
   selector:
     matchLabels:
       leaderworkerset.sigs.k8s.io/name: vllm
-      role: leader
+      ray.io/node-type: head
   # A list of endpoints allowed as part of this ServiceMonitor.
   endpoints:
-  - path: /metrics
-    port: http
+  - port: metrics
   targetLabels:
   - leaderworkerset.sigs.k8s.io/vllm
 ---
@@ -60,7 +59,7 @@ spec:
   selector:
     matchLabels:
       leaderworkerset.sigs.k8s.io/name: vllm
-      role: worker
+      ray.io/node-type: worker
   # A list of endpoints allowed as part of this PodMonitor.
   podMetricsEndpoints:
   - port: metrics

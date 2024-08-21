@@ -70,8 +70,8 @@ spec:
                   name: hf-secret
                   key: hf_api_token              
     workerGroupSpecs:
-    - replicas: 1
-      minReplicas: 0
+    - replicas: 2
+      minReplicas: 2
       maxReplicas: 4
       groupName: gpu-group
       rayStartParams: {}

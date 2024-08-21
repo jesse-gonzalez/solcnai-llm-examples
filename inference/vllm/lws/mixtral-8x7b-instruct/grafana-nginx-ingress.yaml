@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  name: grafana-ingress
+  namespace: kommander
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: grafana.vllm.nkp.cloudnative.nvdlab.net
+    http:
+      paths:
+      - backend:
+          service:
+            name: kube-prometheus-stack-grafana
+            port:
+              number: 3000
+        path: /dkp/grafana
+        pathType: Prefix
+  tls:
+  - hosts:
+    - grafana.vllm.nkp.cloudnative.nvdlab.net
+    secretName: grafana-ingress-tls

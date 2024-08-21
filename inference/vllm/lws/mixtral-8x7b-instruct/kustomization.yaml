@@ -4,10 +4,11 @@ resources:
 - nfs-pvc.yaml
 - lws.yaml
 - service.yaml
-- ingress.yaml
-- vllm-ingress.yaml
+- vllm-nginx-ingress.yaml
 - ray-dashboard-ingress.yaml
 - servicemonitor.yaml
 - horizontal-pod-autoscaler.yaml
 - gradio.yaml
 - gradio-ingress.yaml
+- grafana-nginx-ingress.yaml
+#- nkp-kube-prometheus-stack-overrides.yaml

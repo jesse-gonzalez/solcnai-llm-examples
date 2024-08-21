@@ -1,0 +1,10 @@
+### Mixtral 8x7b testing
+
+curl https://mixtral.vllm.nkp.cloudnative.nvdlab.net/v1/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+      "prompt": "San Francisco is a",
+      "max_tokens": 7,
+      "temperature": 0
+  }'

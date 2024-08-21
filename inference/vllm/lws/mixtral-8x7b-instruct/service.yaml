@@ -19,6 +19,10 @@ spec:
       port: 8265
       protocol: TCP
       targetPort: 8265
+    - name: metrics
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
   selector:
     leaderworkerset.sigs.k8s.io/name: vllm
     role: leader

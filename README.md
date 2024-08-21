@@ -112,3 +112,39 @@ kubectl get nodes -o='custom-columns=NodeName:.metadata.name,TaintKey:.spec.tain
 # List PersistentVolumes sorted by capacity
 kubectl get pv --sort-by=.spec.capacity.storage
 ```
+
+```bash
+### Mixtral 8x7b testing
+
+curl https://mixtral.vllm.nkp.cloudnative.nvdlab.net/v1/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+      "prompt": "San Francisco is a",
+      "max_tokens": 7,
+      "temperature": 0
+  }'
+
+## benchmarking with lws / ray request-rate num-prompts
+OPENAI_API_KEY=ANYTHING sh .staging/benchmarks/vllm-benchmark.sh https://mixtral.vllm.nkp.cloudnative.nvdlab.net mistralai/Mixtral-8x7B-Instruct-v0.1 5 2000
+```
+
+```bash
+## chatbot app
+https://gradio.vllm.nkp.cloudnative.nvdlab.net/
+
+## ray dashboard (embedded with grafana dashboards)
+https://ray.vllm.nkp.cloudnative.nvdlab.net/dashboard/#/overview
+
+## public - view only grafana dashboards
+
+## Ray
+https://grafana.vllm.nkp.cloudnative.nvdlab.net/dkp/grafana/d/rayDefaultDashboard/ray-core-dashboard?orgId=1
+
+## vllm
+https://grafana.vllm.nkp.cloudnative.nvdlab.net/dkp/grafana/d/b281712d-8bff-41ef-9f3f-71ad43c05e9b/vllm?orgId=1
+
+## DCGGM 
+https://grafana.vllm.nkp.cloudnative.nvdlab.net/dkp/grafana/d/Oxed_c6Wz/platform-apps-nvidia-dcgm-exporter?orgId=1
+
+```
