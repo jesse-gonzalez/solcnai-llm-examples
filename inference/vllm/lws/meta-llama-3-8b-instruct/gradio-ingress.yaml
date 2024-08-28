@@ -4,22 +4,22 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-  name: llm-ingress
+  name: gradio-ingress
   namespace: llm
 spec:
   ingressClassName: nginx
   rules:
-  - host: llm.vllm.nkp.cloudnative.nvdlab.net
+  - host: gradio.vllm.nkp.cloudnative.nvdlab.net
     http:
       paths:
       - backend:
           service:
-            name: vllm-leader
+            name: gradio
             port:
-              number: 8000
+              number: 7860
         path: /
         pathType: Prefix
   tls:
   - hosts:
-    - llm.vllm.nkp.cloudnative.nvdlab.net
-    secretName: llm-ingress-tls
+    - gradio.vllm.nkp.cloudnative.nvdlab.net
+    secretName: gradio.vllm.nkp.cloudnative.nvdlab.net

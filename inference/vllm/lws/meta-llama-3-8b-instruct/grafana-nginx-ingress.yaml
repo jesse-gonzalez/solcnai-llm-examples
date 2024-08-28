@@ -4,22 +4,22 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-  name: llm-ingress
-  namespace: llm
+  name: grafana-ingress
+  namespace: kommander
 spec:
   ingressClassName: nginx
   rules:
-  - host: llm.vllm.nkp.cloudnative.nvdlab.net
+  - host: grafana.vllm.nkp.cloudnative.nvdlab.net
     http:
       paths:
       - backend:
           service:
-            name: vllm-leader
+            name: kube-prometheus-stack-grafana
             port:
-              number: 8000
-        path: /
+              number: 3000
+        path: /dkp/grafana
         pathType: Prefix
   tls:
   - hosts:
-    - llm.vllm.nkp.cloudnative.nvdlab.net
-    secretName: llm-ingress-tls
+    - grafana.vllm.nkp.cloudnative.nvdlab.net
+    secretName: grafana-ingress-tls

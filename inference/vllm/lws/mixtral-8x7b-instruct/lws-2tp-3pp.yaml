@@ -1,0 +1,143 @@
+apiVersion: leaderworkerset.x-k8s.io/v1
+kind: LeaderWorkerSet
+metadata:
+  namespace: llm
+  name: vllm
+spec:
+  rolloutStrategy:
+    type: RollingUpdate
+    rollingUpdateConfiguration:
+      maxUnavailable: 2
+      maxSurge: 2
+  replicas: 1
+  leaderWorkerTemplate:
+    size: 3
+    restartPolicy: RecreateGroupOnPodRestart
+    leaderTemplate:
+      metadata:
+        labels:
+          role: leader
+          ray.io/node-type: head
+      spec:
+        containers:
+          - name: vllm-leader
+            image: harbor.infrastructure.cloudnative.nvdlab.net/jesse/vllm-ray:0.0.1
+            imagePullPolicy: Always
+            env:
+              - name: RAY_CLUSTER_SIZE
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.annotations['leaderworkerset.sigs.k8s.io/size']
+              - name: HF_HUB_OFFLINE
+                value: "1"
+              - name: HUGGING_FACE_HUB_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: hf-secret
+                    key: hf_api_token
+              - name: RAY_GRAFANA_IFRAME_HOST
+                value: https://grafana.vllm.nkp.cloudnative.nvdlab.net/dkp/grafana
+              - name: RAY_GRAFANA_HOST
+                value: http://centralized-grafana.kommander:80
+              - name: RAY_PROMETHEUS_HOST
+                value: http://kube-prometheus-stack-prometheus.kommander:9090
+            command:
+              - sh
+              - -c
+              - "/vllm-workspace/ray_init.sh leader --ray_cluster_size=$RAY_CLUSTER_SIZE;
+                 python3 -m vllm.entrypoints.openai.api_server --port 8000 --model mistralai/Mixtral-8x7B-Instruct-v0.1 --tensor-parallel-size 2 --pipeline_parallel_size 3 --dtype half"
+            resources:
+              limits:
+                nvidia.com/gpu: "2"
+                cpu: 8
+                memory: 40Gi
+                ephemeral-storage: 200Gi
+              requests:
+                ephemeral-storage: 200Gi
+            ports:
+              - containerPort: 6379
+                name: gcs-server
+              - containerPort: 8265
+                name: dashboard
+              - containerPort: 10001
+                name: client
+              - containerPort: 8000
+                name: http
+              - containerPort: 8080
+                name: metrics
+            readinessProbe:
+              tcpSocket:
+                port: 6379
+              initialDelaySeconds: 15
+              periodSeconds: 10
+            volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+              - name: vllm-data-volume
+                mountPath: /root/.cache
+        volumes:
+          - name: vllm-data-volume
+            persistentVolumeClaim:
+              claimName: llm-llm-claim
+          - name: dshm
+            emptyDir:
+              medium: Memory
+              sizeLimit: 15Gi
+    workerTemplate:
+      metadata:
+        labels:
+          role: worker
+          ray.io/node-type: worker
+      spec:
+        containers:
+          - name: vllm-worker
+            image: harbor.infrastructure.cloudnative.nvdlab.net/jesse/vllm-ray:0.0.1
+            imagePullPolicy: Always
+            command:
+              - sh
+              - -c
+              - "/vllm-workspace/ray_init.sh worker --ray_address=$(LEADER_NAME).$(LWS_NAME).$(NAMESPACE).svc.cluster.local"
+            resources:
+              limits:
+                nvidia.com/gpu: "2"
+                cpu: 8
+                memory: 40Gi
+                ephemeral-storage: 200Gi
+              requests:
+                ephemeral-storage: 200Gi
+            ports:
+              - containerPort: 8000
+                name: http
+            env:
+              - name: LEADER_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.annotations['leaderworkerset.sigs.k8s.io/leader-name']
+              - name: NAMESPACE
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+              - name: LWS_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.labels['leaderworkerset.sigs.k8s.io/name']
+              - name: HF_HUB_OFFLINE
+                value: "1"
+              - name: HUGGING_FACE_HUB_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: hf-secret
+                    key: hf_api_token
+            volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+              - name: vllm-data-volume
+                mountPath: /root/.cache
+        volumes:
+          - name: vllm-data-volume
+            persistentVolumeClaim:
+              claimName: llm-llm-claim
+          - name: dshm
+            emptyDir:
+              medium: Memory
+              sizeLimit: 15Gi

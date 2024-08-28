@@ -26,12 +26,14 @@ kubectl apply --server-side -f https://github.com/kubernetes-sigs/lws/releases/d
 
 ## deploy lws for target model
 kubectl apply -k inference/vllm/lws/mixtral-8x7b-instruct
+kubectl apply -k inference/vllm/lws/meta-llama-3-8b-instruct
 
 ```
 
 ```bash
 ## Cleanup Using kustomize
 kubectl delete -k inference/vllm/lws/mixtral-8x7b-instruct
+kubectl delete -k inference/vllm/lws/meta-llama-3-8b-instruct
 ```
 
 ## Testing with Kuberay Clusters
@@ -116,7 +118,7 @@ kubectl get pv --sort-by=.spec.capacity.storage
 ```bash
 ### Mixtral 8x7b testing
 
-curl https://mixtral.vllm.nkp.cloudnative.nvdlab.net/v1/completions \
+curl https://llm.vllm.nkp.cloudnative.nvdlab.net/v1/completions \
     -H "Content-Type: application/json" \
     -d '{
       "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
@@ -125,8 +127,21 @@ curl https://mixtral.vllm.nkp.cloudnative.nvdlab.net/v1/completions \
       "temperature": 0
   }'
 
-## benchmarking with lws / ray request-rate num-prompts
-OPENAI_API_KEY=ANYTHING sh .staging/benchmarks/vllm-benchmark.sh https://mixtral.vllm.nkp.cloudnative.nvdlab.net mistralai/Mixtral-8x7B-Instruct-v0.1 1 2000
+## benchmarking with lws / ray num-prompts for mistralai/Mixtral-8x7B-Instruct-v0.1 
+OPENAI_API_KEY=ANYTHING sh benchmarks/vllm-benchmark.sh https://llm.vllm.nkp.cloudnative.nvdlab.net mistralai/Mixtral-8x7B-Instruct-v0.1 1000 1
+
+## meta-llama/Meta-Llama-3-8B-Instruct test
+curl https://llm.vllm.nkp.cloudnative.nvdlab.net/v1/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "meta-llama/Meta-Llama-3-8B-Instruct",
+      "prompt": "San Francisco is a",
+      "max_tokens": 7,
+      "temperature": 0
+  }'
+
+## benchmarking with lws / ray num-prompts for meta-llama/Meta-Llama-3-8B-Instruct  
+OPENAI_API_KEY=ANYTHING sh benchmarks/vllm-benchmark.sh https://llm.vllm.nkp.cloudnative.nvdlab.net meta-llama/Meta-Llama-3-8B-Instruct 100 10
 ```
 
 ```bash
@@ -148,3 +163,43 @@ https://grafana.vllm.nkp.cloudnative.nvdlab.net/dkp/grafana/d/b281712d-8bff-41ef
 https://grafana.vllm.nkp.cloudnative.nvdlab.net/dkp/grafana/d/Oxed_c6Wz/platform-apps-nvidia-dcgm-exporter?orgId=1
 
 ```
+
+## Test using GenAI-Perf
+
+https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/client/src/c%2B%2B/perf_analyzer/genai-perf/README.html
+
+```bash
+pip install tritonclient
+
+apt update && apt install -y --no-install-recommends libb64-0d libcurl4
+
+export RELEASE="24.06"
+
+pip install "git+https://github.com/triton-inference-server/client.git@r${RELEASE}#subdirectory=src/c++/perf_analyzer/genai-perf"
+
+
+export RELEASE="24.06" # e.g. export RELEASE="24.06"
+
+docker run -it --net=host --rm --gpus=all nvcr.io/nvidia/tritonserver:${RELEASE}-py3-sdk
+
+# Run GenAI-Perf in the container:
+genai-perf \
+  -m meta-llama/Meta-Llama-3-8B-Instruct \
+  --service-kind openai \
+  --backend vllm \
+  --endpoint v1/completions \
+  --endpoint-type completions \
+  --num-prompts 100 \
+  --random-seed 123 \
+  --synthetic-input-tokens-mean 200 \
+  --synthetic-input-tokens-stddev 0 \
+  --streaming \
+  --output-tokens-mean 100 \
+  --output-tokens-stddev 0 \
+  --tokenizer hf-internal-testing/llama-tokenizer \
+  --concurrency 1 \
+  --measurement-interval 4000 \
+  --profile-export-file my_profile_export.json \
+  --url https://llm.vllm.nkp.cloudnative.nvdlab.net
+```
+

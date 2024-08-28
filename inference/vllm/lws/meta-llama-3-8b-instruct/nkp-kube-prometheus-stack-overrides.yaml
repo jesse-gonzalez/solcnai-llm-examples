@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-prometheus-stack-overrides
+  namespace: kommander
+data:
+ values.yaml: |
+   ---
+    grafana:
+      grafana.ini:
+        security:
+          allow_embedding: true
+        auth.anonymous:
+          enabled: true
+          org_role: Viewer
+---
+apiVersion: apps.kommander.d2iq.io/v1alpha3
+kind: AppDeployment
+metadata:
+  name: kube-prometheus-stack
+  namespace: kommander
+spec:
+  appRef:
+    kind: ClusterApp
+    name: kube-prometheus-stack-48.3.2
+  configOverrides:
+    name: kube-prometheus-stack-overrides
