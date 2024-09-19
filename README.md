@@ -263,8 +263,8 @@ export MAX_TOKENS=3072
 export MODEL_NAME=$(echo $MODEL | cut -d/ -f2 | tr '[:upper:]' '[:lower:]')
 export PROFILE_NAME="${MODEL_NAME}_${INPUT_SEQUENCE_LENGTH}_${OUTPUT_SEQUENCE_LENGTH}_${NUMBER_OF_PROMPTS}_profile_export.json"
 
-export HF_HUB_TOKEN=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
-export OPENAI_API_KEY=fb12e3db-9462-4ff2-a32c-39d2e49c524a
+export HF_HUB_TOKEN=<>
+export OPENAI_API_KEY=<>
 
 genai-perf profile \
     -m $MODEL \
