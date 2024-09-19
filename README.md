@@ -21,19 +21,20 @@ kubectl create secret generic hf-secret \
 ```bash
 ## install lws operator
 
-VERSION=v0.3.0
+#VERSION=v0.3.0
+VERSION=v0.4.0
 kubectl apply --server-side -f https://github.com/kubernetes-sigs/lws/releases/download/$VERSION/manifests.yaml
 
 ## deploy lws for target model
 kubectl apply -k inference/vllm/lws/mixtral-8x7b-instruct
-kubectl apply -k inference/vllm/lws/meta-llama-3-8b-instruct
+#kubectl apply -k inference/vllm/lws/meta-llama-3-8b-instruct
 
 ```
 
 ```bash
 ## Cleanup Using kustomize
 kubectl delete -k inference/vllm/lws/mixtral-8x7b-instruct
-kubectl delete -k inference/vllm/lws/meta-llama-3-8b-instruct
+#kubectl delete -k inference/vllm/lws/meta-llama-3-8b-instruct
 ```
 
 ## Testing with Kuberay Clusters
@@ -169,37 +170,287 @@ https://grafana.vllm.nkp.cloudnative.nvdlab.net/dkp/grafana/d/Oxed_c6Wz/platform
 https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/client/src/c%2B%2B/perf_analyzer/genai-perf/README.html
 
 ```bash
-pip install tritonclient
+export RELEASE="24.08" # recommend using latest releases in yy.mm format
 
-apt update && apt install -y --no-install-recommends libb64-0d libcurl4
+docker run --rm -it --net=host -v `pwd`:/workdir -w '/workdir' nvcr.io/nvidia/tritonserver:${RELEASE}-py3-sdk
 
-export RELEASE="24.06"
+# --dataset-path benchmarks/ShareGPT_V3_unfiltered_cleaned_split.json \
+export URL=https://llm.vllm.nkp.cloudnative.nvdlab.net
+export MODEL=mistralai/Mixtral-8x7B-Instruct-v0.1
+export INPUT_SEQUENCE_LENGTH=128
+export INPUT_SEQUENCE_STD=0
+export OUTPUT_SEQUENCE_LENGTH=128
+export OUTPUT_SEQUENCE_STD=0
+export NUMBER_OF_PROMPTS=3000
+export CONCURRENCY=10
+export MAX_TOKENS=3072
 
-pip install "git+https://github.com/triton-inference-server/client.git@r${RELEASE}#subdirectory=src/c++/perf_analyzer/genai-perf"
+export MODEL_NAME=$(echo $MODEL | cut -d/ -f2 | tr '[:upper:]' '[:lower:]')
+export PROFILE_NAME="${MODEL_NAME}_${INPUT_SEQUENCE_LENGTH}_${OUTPUT_SEQUENCE_LENGTH}_${NUMBER_OF_PROMPTS}_profile_export.json"
+
+genai-perf profile \
+    -m $MODEL \
+    --service-kind openai \
+    --endpoint v1/chat/completions \
+    --endpoint-type chat \
+    --backend vllm \
+    --streaming \
+    --profile-export-file $PROFILE_NAME \
+    --url $URL \
+    --synthetic-input-tokens-mean $INPUT_SEQUENCE_LENGTH \
+    --synthetic-input-tokens-stddev $INPUT_SEQUENCE_STD \
+    --concurrency $CONCURRENCY \
+    --num-prompts $NUMBER_OF_PROMPTS \
+    --random-seed 123 \
+    --output-tokens-mean $OUTPUT_SEQUENCE_LENGTH \
+    --output-tokens-stddev $OUTPUT_SEQUENCE_STD \
+    --artifact-dir genai-perf-results \
+    --extra-inputs min_tokens:$OUTPUT_SEQUENCE_LENGTH \
+    --extra-inputs max_tokens:$MAX_TOKENS \
+    --extra-inputs ignore_eos:true \
+    --generate-plots \
+    -v
+```
+
+export OPENAI_API_KEY=1e4267ba-b12a-4b9d-90d6-d1cf1a26aeb2
+guidellm \
+  --backend openai_server \
+  --target "https://nai.cnai.nai-nkp-mgx.odin.cloudnative.nvdlab.net/api/v1/chat/completions" \
+  --model "llama-3-70b-instruct" \
+  --data-type emulated \
+  --output-path benchmarks\guidellm \
+  --data "prompt_tokens=512,generated_tokens=128"
 
 
-export RELEASE="24.06" # e.g. export RELEASE="24.06"
+GUIDELLM__ENV="Environment.PROD"
+GUIDELLM__REQUEST_TIMEOUT="30"
+GUIDELLM__MAX_CONCURRENCY="512"
+GUIDELLM__NUM_SWEEP_PROFILES="9"
+GUIDELLM__LOGGING__DISABLED=
+GUIDELLM__LOGGING__CLEAR_LOGGERS="True"
+GUIDELLM__LOGGING__CONSOLE_LOG_LEVEL="WARNING"
+GUIDELLM__LOGGING__LOG_FILE=
+GUIDELLM__LOGGING__LOG_FILE_LEVEL=
+GUIDELLM__DATASET__PREFERRED_DATA_COLUMNS=["prompt","instruction","input","inputs","question","context","text","content","body","data"]
+GUIDELLM__DATASET__PREFERRED_DATA_SPLITS=["test","tst","validation","val","train"]
+GUIDELLM__EMULATED_DATA__SOURCE="https://www.gutenberg.org/files/1342/1342-0.txt"
+GUIDELLM__EMULATED_DATA__FILTER_START="It is a truth universally acknowledged, that a"
+GUIDELLM__EMULATED_DATA__FILTER_END="CHISWICK PRESS:--CHARLES WHITTINGHAM AND CO."
+GUIDELLM__EMULATED_DATA__CLEAN_TEXT_ARGS={"fix_encoding": true, "clean_whitespace": true, "remove_empty_lines": true, "force_new_line_punctuation": true}
+GUIDELLM__OPENAI__API_KEY="invalid_token"
+GUIDELLM__OPENAI__BASE_URL="http://localhost:8000/v1"
+GUIDELLM__OPENAI__MAX_GEN_TOKENS="4096"
+GUIDELLM__REPORT_GENERATION__SOURCE="https://guidellm.neuralmagic.com/local-report/index.html"
+GUIDELLM__REPORT_GENERATION__REPORT_HTML_MATCH="window.report_data = {};"
+GUIDELLM__REPORT_GENERATION__REPORT_HTML_PLACEHOLDER="{}"
 
-docker run -it --net=host --rm --gpus=all nvcr.io/nvidia/tritonserver:${RELEASE}-py3-sdk
+```bash
+export RELEASE="24.06" # recommend using latest releases in yy.mm format
 
-# Run GenAI-Perf in the container:
-genai-perf \
-  -m meta-llama/Meta-Llama-3-8B-Instruct \
-  --service-kind openai \
-  --backend vllm \
-  --endpoint v1/completions \
-  --endpoint-type completions \
-  --num-prompts 100 \
-  --random-seed 123 \
-  --synthetic-input-tokens-mean 200 \
-  --synthetic-input-tokens-stddev 0 \
-  --streaming \
-  --output-tokens-mean 100 \
-  --output-tokens-stddev 0 \
-  --tokenizer hf-internal-testing/llama-tokenizer \
-  --concurrency 1 \
-  --measurement-interval 4000 \
-  --profile-export-file my_profile_export.json \
-  --url https://llm.vllm.nkp.cloudnative.nvdlab.net
+docker run -it --net=host -v `pwd`:/workdir -w '/workdir' nvcr.io/nvidia/tritonserver:${RELEASE}-py3-sdk
+
+# --dataset-path benchmarks/ShareGPT_V3_unfiltered_cleaned_split.json \
+export URL=https://nai.cnai.nai-nkp-mgx.odin.cloudnative.nvdlab.net/api
+export MODEL=llama-3-70b-instruct
+export INPUT_SEQUENCE_LENGTH=128
+export INPUT_SEQUENCE_STD=0
+export OUTPUT_SEQUENCE_LENGTH=128
+export OUTPUT_SEQUENCE_STD=0
+export NUMBER_OF_PROMPTS=3000
+export CONCURRENCY=10
+export MAX_TOKENS=3072
+
+export MODEL_NAME=$(echo $MODEL | cut -d/ -f2 | tr '[:upper:]' '[:lower:]')
+export PROFILE_NAME="${MODEL_NAME}_${INPUT_SEQUENCE_LENGTH}_${OUTPUT_SEQUENCE_LENGTH}_${NUMBER_OF_PROMPTS}_profile_export.json"
+
+export HF_HUB_TOKEN=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
+export OPENAI_API_KEY=fb12e3db-9462-4ff2-a32c-39d2e49c524a
+
+genai-perf profile \
+    -m $MODEL \
+    --service-kind openai \
+    --endpoint v1/chat/completions \
+    --endpoint-type chat \
+    --backend vllm \
+    --streaming \
+    --profile-export-file $PROFILE_NAME \
+    --url $URL \
+    --synthetic-input-tokens-mean $INPUT_SEQUENCE_LENGTH \
+    --synthetic-input-tokens-stddev $INPUT_SEQUENCE_STD \
+    --concurrency $CONCURRENCY \
+    --num-prompts $NUMBER_OF_PROMPTS \
+    --random-seed 123 \
+    --output-tokens-mean $OUTPUT_SEQUENCE_LENGTH \
+    --output-tokens-stddev $OUTPUT_SEQUENCE_STD \
+    --artifact-dir genai-perf-results \
+    --extra-inputs max_tokens:$MAX_TOKENS \
+    --generate-plots \
+    --tokenizer "meta-llama/Meta-Llama-3-70B-Instruct" \
+    -v \
+    -- \
+    -H "Authorization: Bearer $OPENAI_API_KEY"
+```
+
+
+
+`sh benchmarks/genai-perf-benchmark.sh`
+
+## generate comparisons
+
+```
+cd genai-perf-results/
+TEXT_CLASSIFICATION_FILES=$(ls *128_128*export.json | xargs echo)
+genai-perf compare --file $TEXT_CLASSIFICATION_FILES
+mv compare/ text-classification-compare/
+
+QUESTION_ANSWERING_FILES=$(ls *128_2048*export.json | xargs echo)
+genai-perf compare --file $QUESTION_ANSWERING_FILES
+mv compare/ question-answering-compare/
+
+TEXT_GENERATION_FILES=$(ls *128_4096*export.json | xargs echo)
+genai-perf compare --file $TEXT_GENERATION_FILES
+mv compare/ text-generation-compare/
+
+TEXT_SUMMARIZATION_FILES=$(ls *2048_128*export.json | xargs echo)
+genai-perf compare --file $TEXT_SUMMARIZATION_FILES
+mv compare/ text-summarization-compare/
+
+CODE_GENERATION_FILES=$(ls *2048_2048*export.json | xargs echo)
+genai-perf compare --file $CODE_GENERATION_FILES
+mv compare/ code-generation-compare/
+```
+
+### vllm benchmarks
+
+https://buildkite.com/vllm/performance-benchmark/builds/4068#01908bf6-e6e6-4f38-a050-703cd08998dd
+
+```bash
+Input length: randomly sample 500 prompts from ShareGPT dataset (with fixed random seed).
+Output length: the corresponding output length of these 500 prompts.
+Models: llama-3 8B, llama-3 70B, mixtral 8x7B.
+Average QPS (query per second): 4 for the small model (llama-3 8B) and 2 for other two models. For each QPS, the arrival time of each query is determined using a random Poisson process (with fixed random seed).
+Evaluation metrics: Throughput (higher the better), TTFT (time to the first token, lower the better), ITL (inter-token latency, lower the better).
+```
+
+```bash
+
+export NAI_OPENAI_API_KEY=1e4267ba-b12a-4b9d-90d6-d1cf1a26aeb2
+
+host='localhost', port=8000, endpoint='/v1/completions'
+
+export TOKENIZERS_PARALLELISM=false
+export OPENAI_API_KEY="1e4267ba-b12a-4b9d-90d6-d1cf1a26aeb2"
+export URL=https://nai.cnai.nai-nkp-mgx.odin.cloudnative.nvdlab.net/api
+python3 benchmarks/vllm/benchmarks/benchmark_serving.py \
+  --backend openai-chat \
+  --base-url=$URL \
+  --endpoint='/v1/chat/completions' \
+  --model llama-3-70b-instruct \
+  --tokenizer "meta-llama/Meta-Llama-3-70B-Instruct" \
+  --dataset-name sharegpt \
+  --dataset-path benchmarks/ShareGPT_V3_unfiltered_cleaned_split.json \
+  --num-prompts 20 \
+  --result-dir vllm-benchmark-results/ \
+  --result-filename llama-3-70b-instruct_tp1_qps_2.json \
+  --request-rate 1 \
+  --percentile-metrics "ttft,tpot,itl,e2el" \
+  --metric-percentiles "50,95,99" \
+  --sharegpt-output-len 128 \
+  --disable-tqdm \
+  --save-result \
+  2>&1 | tee vllm-benchmark-results/llama-3-70b-instruct_tp1_qps_2_results.txt
+
+source ~/.venv/bin/activate
+export OPENAI_API_KEY=1e4267ba-b12a-4b9d-90d6-d1cf1a26aeb2 && \
+export TOKENIZERS_PARALLELISM=false && \
+./benchmarks/vllm-perf-benchmarks.sh
+
+## extract info from each report
+echo "### Serving Benchmarks" >> vllm-benchmark-results/benchmark_results.md
+sed -n '5p' vllm-benchmark-results/llama-3-70b-instruct_L40Sx4x1_6134_2048_128_3_qps_1_profile_export.json_results.txt >> vllm-benchmark-results/benchmark_results.md # first line
+echo "" >> vllm-benchmark-results/benchmark_results.md
+echo '```' >> vllm-benchmark-results/benchmark_results.md
+tail -n 33 vllm-benchmark-results/llama-3-70b-instruct_L40Sx4x1_6134_2048_128_3_qps_1_profile_export.json_results.txt >> vllm-benchmark-results/benchmark_results.md # last 35 lines
+echo '```' >> vllm-benchmark-results/benchmark_results.md
+
+# Parse and convert to CSV
+
+awk '
+BEGIN {
+    FS=":";
+    OFS=","
+    print "Metric,Value"
+}
+{
+    if (NF == 2) {
+        gsub(/^[ \t]+|[ \t]+$/, "", $1);
+        gsub(/^[ \t]+|[ \t]+$/, "", $2);
+        print $1, $2
+    }
+}
+' vllm-benchmark-results/benchmark_results.md
+
+```
+
+
+
+```
+
+# Get the current date in YYYY-MM-DD format
+current_date=$(date +%Y-%m-%d)
+
+# Define the output CSV and Markdown files with the date appended
+output_csv="vllm-benchmark-results/benchmark_results_${current_date}.csv"
+output_markdown="vllm-benchmark-results/benchmark_results_${current_date}.md"
+
+# Example filename
+filename="llama-3-70b-instruct_L40Sx4x1_6134_2048_128_3_qps_1_profile_export.json_results.txt"
+
+# Remove the extension
+filename_no_ext="${filename%.*}"
+
+# Split the filename by underscores
+IFS='_' read -r MODEL GPU_MODEL GPU_COUNT REPLICA_COUNT MAX_TOKENS INPUT_SEQUENCE_LENGTH OUTPUT_SEQUENCE_LENGTH NUMBER_OF_PROMPTS QPS CONCURRENCY <<< "${filename_no_ext}"
+
+# Print the variables in the desired format
+echo "${MODEL}_${GPU_MODEL}x${GPU_COUNT}x${REPLICA_COUNT}_${MAX_TOKENS}_${INPUT_SEQUENCE_LENGTH}_${OUTPUT_SEQUENCE_LENGTH}_${NUMBER_OF_PROMPTS}_qps_${CONCURRENCY}"
+
+# Initialize the CSV file with headers
+echo "Metric,Value,File" >| $output_csv
+
+# Loop through all relevant files in the vllm-benchmark folder
+for file in vllm-benchmark-results/*.txt; do
+    echo "### Serving Benchmarks" >> $output_markdown
+    sed -n '5p' $file >> $output_markdown # first line
+    echo "" >> $output_markdown
+    echo '```' >> $output_markdown
+    tail -n 33 $file >> $output_markdown # last 35 lines
+    echo '```' >> $output_markdown
+
+    tail -n 33 $file >| $output_csv.temp
+
+    # Parse and append to CSV
+    awk -v filename=$(basename "$file") '
+    BEGIN {
+        FS=":";
+        OFS=","
+    }
+    {
+        if (NF == 2) {
+            gsub(/^[ \t]+|[ \t]+$/, "", $1);
+            gsub(/^[ \t]+|[ \t]+$/, "", $2);
+            print $1, $2, filename
+        }
+    }
+    ' $output_csv.temp | tee -a $output_csv
+done
+
+rm $output_csv.temp
+
+# Display the CSV content
+cat $output_csv
+
+
+
 ```
 

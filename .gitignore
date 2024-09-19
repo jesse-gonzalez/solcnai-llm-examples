@@ -1,6 +1,8 @@
 # other stuff
 .staging/
 .todo
+artifacts/**
+*.json
 
 .DS_Store
 
@@ -14,7 +16,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+#build/
 develop-eggs/
 dist/
 downloads/

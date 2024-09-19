@@ -11,7 +11,7 @@ spec:
       maxSurge: 2
   replicas: 1
   leaderWorkerTemplate:
-    size: 8
+    size: 2
     restartPolicy: RecreateGroupOnPodRestart
     leaderTemplate:
       metadata:
@@ -45,12 +45,12 @@ spec:
               - sh
               - -c
               - "/vllm-workspace/ray_init.sh leader --ray_cluster_size=$RAY_CLUSTER_SIZE;
-                 python3 -m vllm.entrypoints.openai.api_server --port 8000 --model mistralai/Mixtral-8x7B-Instruct-v0.1 --tensor-parallel-size 2 --pipeline_parallel_size 8 --dtype half"
+                 python3 -m vllm.entrypoints.openai.api_server --port 8000 --model mistralai/Mixtral-8x7B-Instruct-v0.1 --tensor-parallel-size 4 --pipeline_parallel_size 1 --dtype half --disable-log-requests"
             resources:
               limits:
-                nvidia.com/gpu: "2"
+                nvidia.com/gpu: "4"
                 cpu: 8
-                memory: 40Gi
+                memory: 64Gi
                 ephemeral-storage: 200Gi
               requests:
                 ephemeral-storage: 200Gi
@@ -97,14 +97,14 @@ spec:
               - sh
               - -c
               - "/vllm-workspace/ray_init.sh worker --ray_address=$(LEADER_NAME).$(LWS_NAME).$(NAMESPACE).svc.cluster.local"
-            resources:
-              limits:
-                nvidia.com/gpu: "2"
-                cpu: 8
-                memory: 40Gi
-                ephemeral-storage: 200Gi
-              requests:
-                ephemeral-storage: 200Gi
+            # resources:
+            #   limits:
+            #     nvidia.com/gpu: "4"
+            #     cpu: 8
+            #     memory: 64Gi
+            #     ephemeral-storage: 200Gi
+            #   requests:
+            #     ephemeral-storage: 200Gi
             ports:
               - containerPort: 8000
                 name: http
