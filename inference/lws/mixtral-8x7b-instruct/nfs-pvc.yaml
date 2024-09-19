@@ -17,14 +17,13 @@ spec:
     namespace: llm
   nfs:
     path: /llm-model-store
-    server: files.romanticism.cloudnative.nvdlab.net
+    server: files.odin.cloudnative.nvdlab.net
   persistentVolumeReclaimPolicy: Retain
   volumeMode: Filesystem
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  annotations:
   name: llm-llm-claim
   namespace: llm
 spec:
@@ -36,6 +35,6 @@ spec:
   selector:
     matchLabels:
       storage: nfs
-  storageClassName: ""
+  storageClassName: "nai-nfs-storage"
   volumeMode: Filesystem
   volumeName: llm-volume
