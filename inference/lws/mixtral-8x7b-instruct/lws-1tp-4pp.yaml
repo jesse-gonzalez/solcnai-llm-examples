@@ -36,16 +36,18 @@ spec:
                     name: hf-secret
                     key: hf_api_token
               - name: RAY_GRAFANA_IFRAME_HOST
-                value: https://grafana.vllm.nkp.cloudnative.nvdlab.net/dkp/grafana
+                value: https://grafana.lws.nkp.cloudnative.nvdlab.net/dkp/grafana
               - name: RAY_GRAFANA_HOST
                 value: http://centralized-grafana.kommander:80
               - name: RAY_PROMETHEUS_HOST
                 value: http://kube-prometheus-stack-prometheus.kommander:9090
+              - name: MODEL_ID
+                value: mistralai/Mixtral-8x7B-Instruct-v0.1
             command:
               - sh
               - -c
               - "/vllm-workspace/ray_init.sh leader --ray_cluster_size=$RAY_CLUSTER_SIZE;
-                 python3 -m vllm.entrypoints.openai.api_server --port 8000 --model mistralai/Mixtral-8x7B-Instruct-v0.1 --tensor-parallel-size 1 --pipeline_parallel_size 4 --dtype half --disable-log-requests"
+                 python3 -m vllm.entrypoints.openai.api_server --port 8000 --model=/mnt/models/$(MODEL_ID) --served-model-name=$(MODEL_ID) --tensor-parallel-size 1 --pipeline_parallel_size 4 --dtype half --disable-log-requests"
             resources:
               limits:
                 nvidia.com/gpu: "1"
@@ -74,11 +76,11 @@ spec:
               - mountPath: /dev/shm
                 name: dshm
               - name: vllm-data-volume
-                mountPath: /root/.cache
+                mountPath: /mnt/models
         volumes:
           - name: vllm-data-volume
             persistentVolumeClaim:
-              claimName: llm-llm-claim
+              claimName: lws-pvc
           - name: dshm
             emptyDir:
               medium: Memory
@@ -128,15 +130,17 @@ spec:
                   secretKeyRef:
                     name: hf-secret
                     key: hf_api_token
+              - name: MODEL_ID
+                value: mistralai/Mixtral-8x7B-Instruct-v0.1
             volumeMounts:
               - mountPath: /dev/shm
                 name: dshm
               - name: vllm-data-volume
-                mountPath: /root/.cache
+                mountPath: /mnt/models
         volumes:
           - name: vllm-data-volume
             persistentVolumeClaim:
-              claimName: llm-llm-claim
+              claimName: lws-pvc
           - name: dshm
             emptyDir:
               medium: Memory

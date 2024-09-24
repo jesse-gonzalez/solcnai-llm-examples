@@ -1,0 +1,67 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vllm-metrics-servicemonitor
+  namespace: llm
+  labels:
+    prometheus.kommander.d2iq.io/select: "true"
+    leaderworkerset.sigs.k8s.io/name: vllm
+spec:
+  endpoints:
+  # should be the vllm metrics port (on 8000)
+  - path: /metrics
+    port: http
+  namespaceSelector:
+    matchNames:
+    - llm
+  selector:
+    matchLabels:
+      leaderworkerset.sigs.k8s.io/name: vllm
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ray-head-monitor
+  namespace: llm
+  labels:
+    prometheus.kommander.d2iq.io/select: "true"
+    leaderworkerset.sigs.k8s.io/name: vllm
+spec:
+  jobLabel: ray-head
+  namespaceSelector:
+    matchNames:
+      - llm
+  # Only select Kubernetes Services with "matchLabels".
+  selector:
+    matchLabels:
+      leaderworkerset.sigs.k8s.io/name: vllm
+      ray.io/node-type: head
+  # A list of endpoints allowed as part of this ServiceMonitor.
+  endpoints:
+  - path: /metrics
+    port: metrics
+  targetLabels:
+  - leaderworkerset.sigs.k8s.io/vllm
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: ray-workers-monitor
+  namespace: llm
+  labels:
+    prometheus.kommander.d2iq.io/select: "true"
+    leaderworkerset.sigs.k8s.io/name: vllm
+spec:
+  jobLabel: ray-workers
+  namespaceSelector:
+    matchNames:
+      - llm
+  # Only select Kubernetes Pods with "matchLabels".
+  selector:
+    matchLabels:
+      leaderworkerset.sigs.k8s.io/name: vllm
+      ray.io/node-type: worker
+  # A list of endpoints allowed as part of this PodMonitor.
+  podMetricsEndpoints:
+  - path: /metrics
+    port: metrics

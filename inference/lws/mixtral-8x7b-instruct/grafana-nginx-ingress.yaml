@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: grafana.vllm.nkp.cloudnative.nvdlab.net
+  - host: grafana.lws.nkp.cloudnative.nvdlab.net
     http:
       paths:
       - backend:
@@ -21,5 +21,5 @@ spec:
         pathType: Prefix
   tls:
   - hosts:
-    - grafana.vllm.nkp.cloudnative.nvdlab.net
+    - grafana.lws.nkp.cloudnative.nvdlab.net
     secretName: grafana-ingress-tls

@@ -1,0 +1,32 @@
+#### Mixtral 8x7b testing
+
+### v1/completions
+curl https://llm.lws.nkp.cloudnative.nvdlab.net/v1/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "meta-llama/Meta-Llama-3-70B-Instruct",
+      "prompt": "San Francisco is a",
+      "max_tokens": 7,
+      "temperature": 0
+  }'
+
+### v1/chat/completions
+curl https://llm.lws.nkp.cloudnative.nvdlab.net/v1/chat/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "meta-llama/Meta-Llama-3-70B-Instruct",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a helpful assistant."
+        },
+        {
+          "role": "user",
+          "content": "What did the fox jumped over?"
+        }
+      ],
+      "temperature": 0.7,
+      "max_tokens": 64,
+      "top_p": 1,
+      "temperature": 0
+  }'

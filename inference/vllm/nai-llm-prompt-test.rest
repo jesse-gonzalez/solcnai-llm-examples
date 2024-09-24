@@ -1,0 +1,48 @@
+
+@OPENAI_API_KEY=<>
+
+### v1/chat/completions
+curl -k -X 'POST' 'https://nai.cnai.nai-nkp-mgx.odin.cloudnative.nvdlab.net/api/v1/chat/completions' \
+ -H "Authorization: Bearer {{OPENAI_API_KEY}}" \
+ -H 'accept: application/json' \
+ -H 'Content-Type: application/json' \
+ -d '{
+      "model": "mixtral-8x7b-inst-v1",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Explain Deep Neural Networks in simple terms"
+        }
+      ],
+      "max_tokens": 256,
+      "stream": false
+}'
+
+
+### v1/chat/completions - mistral 7b
+curl -k -X 'POST' 'https://nai.cnai.nai-nkp-mgx.odin.cloudnative.nvdlab.net/api/v1/chat/completions' \
+ -H "Authorization: Bearer {{OPENAI_API_KEY}}" \
+ -H 'accept: application/json' \
+ -H 'Content-Type: application/json' \
+ -d '{
+      "model": "mistral-7b-inst-v3",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Explain Deep Neural Networks in simple terms"
+        }
+      ],
+      "max_tokens": 256,
+      "stream": false
+}'
+
+### v1/completions
+curl -k -X 'POST' 'https://nai.cnai.nai-nkp-mgx.odin.cloudnative.nvdlab.net/api/v1/completions' \
+    -H "Authorization: Bearer {{OPENAI_API_KEY}}" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "mixtral-8x7b-inst-v1",
+      "prompt": "San Francisco is a",
+      "max_tokens": 7,
+      "temperature": 0
+  }'

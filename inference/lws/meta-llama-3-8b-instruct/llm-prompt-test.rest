@@ -1,7 +1,7 @@
 #### Mixtral 8x7b testing
 
 ### v1/completions
-curl https://llm.vllm.nkp.cloudnative.nvdlab.net/v1/completions \
+curl https://llm.lws.nkp.cloudnative.nvdlab.net/v1/completions \
     -H "Content-Type: application/json" \
     -d '{
       "model": "meta-llama/Meta-Llama-3-8B-Instruct",
@@ -11,7 +11,7 @@ curl https://llm.vllm.nkp.cloudnative.nvdlab.net/v1/completions \
   }'
 
 ### v1/chat/completions
-curl https://llm.vllm.nkp.cloudnative.nvdlab.net/v1/chat/completions \
+curl https://llm.lws.nkp.cloudnative.nvdlab.net/v1/chat/completions \
     -H "Content-Type: application/json" \
     -d '{
       "model": "meta-llama/Meta-Llama-3-8B-Instruct",

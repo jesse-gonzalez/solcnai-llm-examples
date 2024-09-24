@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+#- nfs-pvc.yaml
+- lws-4tp-1pp.yaml #baseline
+#- lws-4tp-2pp.yaml # 4 gpus x 2 vms
+#- lws-2tp-2pp.yaml # 2 gpus x 2 vms
+#- lws-1tp-4pp.yaml # 1 gpu x 4 vms
+- service.yaml
+- vllm-nginx-ingress.yaml
+- ray-dashboard-ingress.yaml
+- servicemonitor.yaml
+- horizontal-pod-autoscaler.yaml
+- gradio.yaml
+- gradio-ingress.yaml
+- grafana-nginx-ingress.yaml
+#- nkp-kube-prometheus-stack-overrides.yaml

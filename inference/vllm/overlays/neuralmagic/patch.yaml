@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: vllm
+        env:
+        - name: MODEL_ID
+          value: mistralai/Mixtral-8x7B-Instruct-v0.1
+

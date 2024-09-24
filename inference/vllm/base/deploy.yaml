@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-deployment
+  labels:
+    app: vllm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm
+  template:
+    metadata:
+      labels:
+        app: vllm
+      annotations:
+        prometheus.io/scrape: "true"                # Enable scraping
+        prometheus.io/port: "9090"                  # Port to scrape metrics from
+        prometheus.io/path: "/metrics"              # Metrics endpoint
+    spec:
+      containers:
+      - name: vllm
+        image: vllm/vllm-openai:v0.6.1.post2
+        ports:
+        - name: http                               # Named port for the application
+          containerPort: 8000                      # Application port
+        - name: metrics                            # Named port for Prometheus metrics
+          containerPort: 8080                      # Metrics port for Prometheus
+        volumeMounts:
+        - name: vllm-storage
+          mountPath: /mnt/models  # PVC mount for model storage
+        - name: dshm
+          mountPath: /dev/shm  # Shared memory mount for performance
+        command: ["python3", "-m", "vllm.entrypoints.openai.api_server"]
+        args:
+        - --port=8000
+        - --model=/mnt/models/$(MODEL_ID)
+        - --tokenizer=$(MODEL_ID)
+        ## vllm 0.4.3 used hyphens not underscores
+        ## - --served-model-name=$(MODEL_ID)
+        ## - --tensor-parallel-size=4
+        ## - --pipeline-parallel-size=1
+        ## - --engine EXAMPLE
+        - --served_model_name=$(MODEL_ID)
+        - --tensor_parallel_size=4
+        - --pipeline_parallel_size=1 
+        - --dtype=half
+        - --disable-log-requests
+        env:
+        - name: MODEL_ID
+          value: meta-llama/Meta-Llama-3-70B-Instruct
+        # - name: MODEL_ID
+        #   value: mistralai/Mixtral-8x7B-Instruct-v0.1
+        - name: HUGGING_FACE_HUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secret
+              key: hf_api_token          
+        resources:
+          limits:
+            nvidia.com/gpu: "4"
+            cpu: 8
+            memory: 64Gi
+            ephemeral-storage: 200Gi
+          requests:
+            ephemeral-storage: 200Gi
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 240
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 240
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+      volumes:
+      - name: vllm-storage
+        persistentVolumeClaim:
+          claimName: vllm-pvc
+      - name: dshm
+        emptyDir:
+          medium: Memory  # Memory-backed /dev/shm
+          sizeLimit: 15Gi

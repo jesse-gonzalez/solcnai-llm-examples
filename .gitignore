@@ -3,6 +3,9 @@
 .todo
 artifacts/**
 *.json
+benchmarks/vllm/
+*.xls
+*.csv
 
 .DS_Store
 
@@ -17,6 +20,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 #build/
+*-results/
 develop-eggs/
 dist/
 downloads/

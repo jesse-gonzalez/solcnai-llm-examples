@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: vllm
+        args:
+        - --tensor_parallel_size=4
+        resources:
+          limits:
+            nvidia.com/gpu: "4"
+            cpu: 8
+            memory: 64Gi
+            ephemeral-storage: 200Gi
+          requests:
+            ephemeral-storage: 200Gi

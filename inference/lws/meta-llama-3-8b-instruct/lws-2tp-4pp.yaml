@@ -36,16 +36,18 @@ spec:
                     name: hf-secret
                     key: hf_api_token
               - name: RAY_GRAFANA_IFRAME_HOST
-                value: https://grafana.vllm.nkp.cloudnative.nvdlab.net/dkp/grafana
+                value: https://grafana.lws.nkp.cloudnative.nvdlab.net/dkp/grafana
               - name: RAY_GRAFANA_HOST
                 value: http://centralized-grafana.kommander:80
               - name: RAY_PROMETHEUS_HOST
                 value: http://kube-prometheus-stack-prometheus.kommander:9090
+              - name: MODEL_ID
+                value: meta-llama/Meta-Llama-3-70B-Instruct
             command:
               - sh
               - -c
               - "/vllm-workspace/ray_init.sh leader --ray_cluster_size=$RAY_CLUSTER_SIZE;
-                 python3 -m vllm.entrypoints.openai.api_server --port 8000 --model meta-llama/Meta-Llama-3-8B-Instruct --tensor-parallel-size 2 --pipeline_parallel_size 4 --dtype half"
+                 python3 -m vllm.entrypoints.openai.api_server --port 8000 --model=/mnt/models/meta-llama/Meta-Llama-3-8B-Instruct --tensor-parallel-size 2 --pipeline_parallel_size 4 --dtype half"
             resources:
               limits:
                 nvidia.com/gpu: "2"
@@ -74,11 +76,11 @@ spec:
               - mountPath: /dev/shm
                 name: dshm
               - name: vllm-data-volume
-                mountPath: /root/.cache
+                mountPath: /mnt/models
         volumes:
           - name: vllm-data-volume
             persistentVolumeClaim:
-              claimName: llm-llm-claim
+              claimName: lws-pvc
           - name: dshm
             emptyDir:
               medium: Memory
@@ -132,11 +134,11 @@ spec:
               - mountPath: /dev/shm
                 name: dshm
               - name: vllm-data-volume
-                mountPath: /root/.cache
+                mountPath: /mnt/models
         volumes:
           - name: vllm-data-volume
             persistentVolumeClaim:
-              claimName: llm-llm-claim
+              claimName: lws-pvc
           - name: dshm
             emptyDir:
               medium: Memory
