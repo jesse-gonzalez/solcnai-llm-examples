@@ -1,10 +1,10 @@
 - [solcnai-llm-examples](#solcnai-llm-examples)
-  - [All Examples - Pre-Requisites](#all-examples---pre-requisites)
-  - [Multi-GPU/Multi-Node Distributed Inferencing Testing w/ LWS/vLLM](#multi-gpumulti-node-distributed-inferencing-testing-w-lwsvllm)
+  - [Pre-Requisites](#pre-requisites)
+  - [Deploy Multi-GPU/Multi-Node Distributed Inferencing with LWS/vLLM/Ray (Tensor \& Pipeline Parallelization)](#deploy-multi-gpumulti-node-distributed-inferencing-with-lwsvllmray-tensor--pipeline-parallelization)
+  - [Deploy Single-Node/Multi-GPU using vLLM (Tensor Parallelization)](#deploy-single-nodemulti-gpu-using-vllm-tensor-parallelization)
   - [Benchmarking using NVIDIA GenAI-Perf](#benchmarking-using-nvidia-genai-perf)
     - [Genai-Perf - Benchmarking Multiple Use Cases](#genai-perf---benchmarking-multiple-use-cases)
     - [Genai-Perf - Generate comparisons using Gen-AI](#genai-perf---generate-comparisons-using-gen-ai)
-      - [Deploy Native vLLM Endpoint](#deploy-native-vllm-endpoint)
     - [Benchmarking using vLLM Project](#benchmarking-using-vllm-project)
   - [vLLM Benchmarks - Looping through Multiple Use Cases](#vllm-benchmarks---looping-through-multiple-use-cases)
   - [Troubleshooting](#troubleshooting)
@@ -23,7 +23,7 @@
 
 Examples repo for various LLM inferencing Deployment and Testing scenarios
 
-## All Examples - Pre-Requisites
+## Pre-Requisites
 
 1. Configure Namespace
 
@@ -97,7 +97,7 @@ Examples repo for various LLM inferencing Deployment and Testing scenarios
     EOF
     ```
 
-## Multi-GPU/Multi-Node Distributed Inferencing Testing w/ LWS/vLLM
+## Deploy Multi-GPU/Multi-Node Distributed Inferencing with LWS/vLLM/Ray (Tensor & Pipeline Parallelization)
 
 ```bash
 ## 1. install lws operator
@@ -145,6 +145,84 @@ https://grafana.lws.nkp.cloudnative.nvdlab.net/dkp/grafana/d/b281712d-8bff-41ef-
 
 ## DCGGM 
 https://grafana.lws.nkp.cloudnative.nvdlab.net/dkp/grafana/d/Oxed_c6Wz/platform-apps-nvidia-dcgm-exporter?orgId=1
+
+```
+
+## Deploy Single-Node/Multi-GPU using vLLM (Tensor Parallelization)
+
+1. Create Namespace and HuggingFace secret
+
+```bash
+## create namespace
+kubectl create ns vllm
+
+## configure hugging face API token secret
+export HUGGING_FACE_HUB_TOKEN=<TOKEN>
+kubectl create secret generic hf-secret \
+    --from-literal=hf_api_token=${HUGGING_FACE_HUB_TOKEN} \
+    --dry-run=client -o yaml -n vllm | kubectl apply -f -
+```
+
+2. Create PVC and PV
+
+```bash
+export NFS_STORAGE_CLASS=nai-nfs-storage
+export FILES_SERVER_FQDN=files.odin.cloudnative.nvdlab.net
+
+cat <<EOF | kubectl apply -n vllm -f -
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    storage: nfs
+  name: vllm-volume
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 300Gi
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: vllm-pvc
+    namespace: vllm
+  nfs:
+    path: /llm-model-store/
+    server: ${FILES_SERVER_FQDN}
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vllm-pvc
+  namespace: vllm
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 300Gi
+  selector:
+    matchLabels:
+      storage: nfs
+  storageClassName: ${NFS_STORAGE_CLASS}
+  volumeMode: Filesystem
+  volumeName: vllm-volume
+EOF
+```
+
+```bash
+
+## deploy base
+kubectl apply -k inference/vllm/base
+
+## deploy specific
+kubectl apply -k inference/vllm/overlays/meta-llama/Meta-Llama-3-70B-Instruct
+
+## cleanup
+kubectl delete -k inference/vllm/overlays/meta-llama/Meta-Llama-3-70B-Instruct
 
 ```
 
@@ -282,84 +360,6 @@ mv compare/ text-summarization-compare/
 CODE_GENERATION_FILES=$(ls *2048_2048*export.json | xargs echo)
 genai-perf compare --file $CODE_GENERATION_FILES
 mv compare/ code-generation-compare/
-```
-
-#### Deploy Native vLLM Endpoint
-
-1. Create Namespace and HuggingFace secret
-
-```bash
-## create namespace
-kubectl create ns vllm
-
-## configure hugging face API token secret
-export HUGGING_FACE_HUB_TOKEN=<TOKEN>
-kubectl create secret generic hf-secret \
-    --from-literal=hf_api_token=${HUGGING_FACE_HUB_TOKEN} \
-    --dry-run=client -o yaml -n vllm | kubectl apply -f -
-```
-
-2. Create PVC and PV
-
-```bash
-export NFS_STORAGE_CLASS=nai-nfs-storage
-export FILES_SERVER_FQDN=files.odin.cloudnative.nvdlab.net
-
-cat <<EOF | kubectl apply -n vllm -f -
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  labels:
-    storage: nfs
-  name: vllm-volume
-spec:
-  accessModes:
-  - ReadWriteMany
-  capacity:
-    storage: 300Gi
-  claimRef:
-    apiVersion: v1
-    kind: PersistentVolumeClaim
-    name: vllm-pvc
-    namespace: vllm
-  nfs:
-    path: /llm-model-store/
-    server: ${FILES_SERVER_FQDN}
-  persistentVolumeReclaimPolicy: Retain
-  volumeMode: Filesystem
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: vllm-pvc
-  namespace: vllm
-spec:
-  accessModes:
-  - ReadWriteMany
-  resources:
-    requests:
-      storage: 300Gi
-  selector:
-    matchLabels:
-      storage: nfs
-  storageClassName: ${NFS_STORAGE_CLASS}
-  volumeMode: Filesystem
-  volumeName: vllm-volume
-EOF
-```
-
-```bash
-
-## deploy base
-kubectl apply -k inference/vllm/base
-
-## deploy specific
-kubectl apply -k inference/vllm/overlays/meta-llama/Meta-Llama-3-70B-Instruct
-
-## cleanup
-kubectl delete -k inference/vllm/overlays/meta-llama/Meta-Llama-3-70B-Instruct
-
 ```
 
 ### Benchmarking using vLLM Project
